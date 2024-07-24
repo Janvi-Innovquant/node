@@ -74,13 +74,6 @@ route.post("/saveconn",Connections.saveconnection)
  *   get:
  *     summary: Get All Connection
  *     tags: [Connection]
- *     parameters:
- *           - in: query
- *              name: page
- *              schema:
- *                  type:string
- *              required:true
- *              description: Page query
  *     responses:
  *       201:
  *         description: Get Connection 
