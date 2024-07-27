@@ -100,25 +100,23 @@ const storage = multer.diskStorage({
  *     summary: Upload a file
  *     tags: [User]
  *     requestBody:
- *        required: true
- *     content:
- *        multipart/form-data:
- *          schema:
+ *       content:
+ *         multipart/form-data:
+ *           schema:
  *             type: object
  *             properties:
- *                file:
- *                  type: string
- *                  format: binary
- *                  description: The Excel file to upload. 
- *     parameters:
- *          - in: formData
- *            name: upload file
- *            type: file
- *     description: The file to upload
- *     required: true
+ *               file:
+ *                 type: string
+ *                 format: binary
+ *             required:
+ *               - file
  *     responses:
  *       201:
  *         description: Matched Data
+ *       400:
+ *         description: Bad Request
+ *       500:
+ *         description: Server Error
  */
 route.post('/match', upload.single('file'), Users.matchdata)
 
