@@ -1,5 +1,7 @@
 const pagination = require("../middleware/pagination");
-let Connection = require("../models/connectionmodel")
+let Connection = require("../models/connectionmodel");
+const path = require("path")
+const xlsx = require("xlsx")
 
 module.exports = {
   saveconnection: async (req, res) => {
@@ -53,11 +55,33 @@ module.exports = {
         },
 
         {
-          $unwind: '$requestedByDetails'
+          $lookup: {
+            from: 'User',
+            localField: 'approvedBy',
+            foreignField: '_id',
+            as: 'ApprovedBy'
+          }
+        },
+
+        {
+          $unwind: {
+            path: '$requestedByDetails',
+            preserveNullAndEmptyArrays: true
+          }
         },
         {
-          $unwind: '$requestedToDetails'
+          $unwind: {
+             path: '$requestedToDetails',
+             preserveNullAndEmptyArrays: true
+            }
         },
+        {
+          $unwind: {
+            path: '$ApprovedBy',
+            preserveNullAndEmptyArrays: true
+          }
+        },
+
         {
           $match: matchStage
         },
@@ -67,6 +91,7 @@ module.exports = {
             _id: '$_id',
             requestedBy: { $first: '$requestedByDetails' },
             requestedTo: { $push: '$requestedToDetails' },
+            approvedBy: {$push: '$ApprovedBy'},
             amount: { $first: '$amount' },
             status: { $first: '$status' },
             created_at: { $first: '$created_at' }
@@ -114,7 +139,37 @@ module.exports = {
       console.log(error)
       res.send({ success: false, message: "Something went wrong", error })
     }
-  }
+  },
+
+
+  // matchdata : async(req,res)=>{
+  //      const filePath =  path.join(__dirname,'uploads',req.file.filename);
+  //      const XlsxData = xlsx.readFile(filePath)
+  //      const sheetName = XlsxData.SheetNames[0];
+  //      const Sheet = xlsx.utils.sheet_to_json(XlsxData.Sheets[sheetName])
+
+  //      const excelData = worksheet.map(row => ({
+  //       key: row.key,
+  //       value: row.value,
+  //     }));
+
+  //     const Data = await Connection.find({},(err,mongoData) => {
+  //       if (err) 
+  //         return res.status(500).send(err);
+
+  //       const matchData = excelData.map(row => {
+  //         const mongoRow = mongoData.find(mongoRow => mongoRow.key === row.key)
+  //         return {
+  //           key: excelRow.key,
+  //           excelValue: excelRow.value,
+  //           mongoValue: mongoRow ? mongoRow.value : null,
+  //         };
+  //       })
+  //       res.json({matchData,Data})
+  //     })
+  // }
+
+  
 
 }
 

@@ -4,6 +4,8 @@ let Users = require("../controllers/usercnt")
 let Connections = require("../controllers/connectioncnt");
 const pagination = require("../middleware/pagination");
 let User = require("../models/usermodel")
+const multer = require("multer")
+const path = require("path")
 
 //User
 /**
@@ -73,11 +75,54 @@ route.post("/saveconn",Connections.saveconnection)
  * /api/getConnection:
  *   get:
  *     summary: Get All Connection
- *     tags: [Connection]
  *     responses:
- *       201:
+ *       200:
  *         description: Get Connection 
  */
 route.get("/getConnection", Connections.getConnection)
+
+const storage = multer.diskStorage({
+    destination: function(req,file,cb){
+        cb(null,'uploads/')
+    },
+    filename: function (req, file, cb) {
+        cb(null, file.originalname);
+      },
+})
+
+  const upload = multer({ storage: storage });
+
+ 
+/**
+ * @swagger
+ * /api/match:
+ *   post:
+ *     summary: Create a new Connection
+ *     tags: [Connection]
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - requestedBy
+ *               - requestedTo
+ *               - amount
+ *               - status
+ *             properties:
+ *               requestedBy:
+ *                 type: string
+ *               requestedTo:
+ *                 type: string
+ *               amount:
+ *                 type: string
+ *               status:
+ *                 type: string
+ *     responses:
+ *       201:
+ *         description: Connection created
+ */
+route.post('/match', upload.single('file'), Users.matchdata)
 
 module.exports = route

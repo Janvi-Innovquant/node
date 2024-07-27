@@ -12,6 +12,12 @@ let Connection = new Schema({
     ref : 'User',
     required : true
   }],
+
+  approvedBy:{
+    type: Schema.Types.ObjectId,
+    ref : 'User',
+    required : true
+  },
   
   amount : {
     type:Number,
@@ -22,9 +28,10 @@ let Connection = new Schema({
     enum: ["active", "pending", "deactive"],
     default: "pending"
   },
-  
- 
- created_at:Date
+  created_at:{
+  type:Date,
+  default:Date.now()
+ }
 },
 {
     collection:"Connection"

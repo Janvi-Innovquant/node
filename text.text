@@ -1,0 +1,376 @@
+const express = require('express');
+const mongoose = require('mongoose');
+const bodyParser = require('body-parser');
+const xlsx = require('xlsx');
+const fs = require('fs');
+const path = require('path');
+
+const app = express();
+app.use(bodyParser.json());
+
+// MongoDB connection
+mongoose.connect('mongodb://localhost:27017/mydatabase', {
+  useNewUrlParser: true,
+  useUnifiedTopology: true,
+});
+
+const db = mongoose.connection;
+db.on('error', console.error.bind(console, 'connection error:'));
+db.once('open', function () {
+  console.log('Connected to MongoDB');
+});
+
+// Define a simple schema and model
+const DataSchema = new mongoose.Schema({
+  key: String,
+  value: String,
+});
+
+const Data = mongoose.model('Data', DataSchema);
+
+// Endpoint to import and match Excel data
+app.post('/import', (req, res) => {
+  const filePath = path.join(__dirname, 'data.xlsx'); // Path to your Excel file
+  const workbook = xlsx.readFile(filePath);
+  const sheetName = workbook.SheetNames[0];
+  const worksheet = xlsx.utils.sheet_to_json(workbook.Sheets[sheetName]);
+
+  // Assuming your Excel data has a 'key' and 'value' column
+  const excelData = worksheet.map(row => ({
+    key: row.key,
+    value: row.value,
+  }));
+
+  // Fetch data from MongoDB
+  Data.find({}, (err, mongoData) => {
+    if (err) return res.status(500).send(err);
+
+    // Match data
+    const matchedData = excelData.map(excelRow => {
+      const mongoRow = mongoData.find(mongoRow => mongoRow.key === excelRow.key);
+      return {
+        key: excelRow.key,
+        excelValue: excelRow.value,
+        mongoValue: mongoRow ? mongoRow.value : null,
+      };
+    });
+
+    res.json(matchedData);
+  });
+});
+
+const PORT = process.env.PORT || 3000;
+app.listen(PORT, () => {
+  console.log(`Server is running on port ${PORT}`);
+});
+
+
+
+
+
+
+
+
+
+
+const express = require('express');
+const mongoose = require('mongoose');
+const bodyParser = require('body-parser');
+const multer = require('multer');
+const xlsx = require('xlsx');
+const path = require('path');
+const fs = require('fs');
+
+const app = express();
+app.use(bodyParser.json());
+
+// MongoDB connection
+mongoose.connect('mongodb://localhost:27017/mydatabase', {
+  useNewUrlParser: true,
+  useUnifiedTopology: true,
+});
+
+const db = mongoose.connection;
+db.on('error', console.error.bind(console, 'connection error:'));
+db.once('open', function () {
+  console.log('Connected to MongoDB');
+});
+
+// Define a simple schema and model
+const DataSchema = new mongoose.Schema({
+  key: String,
+  value: String,
+});
+
+const Data = mongoose.model('Data', DataSchema);
+
+// Set up multer for file uploads
+const storage = multer.diskStorage({
+  destination: function (req, file, cb) {
+    cb(null, 'uploads/');
+  },
+  filename: function (req, file, cb) {
+    cb(null, file.originalname);
+  },
+});
+
+const upload = multer({ storage: storage });
+
+// Create uploads directory if it doesn't exist
+if (!fs.existsSync('uploads')) {
+  fs.mkdirSync('uploads');
+}
+
+// Endpoint to import and match Excel data
+app.post('/import', upload.single('file'), (req, res) => {
+  const filePath = path.join(__dirname, 'uploads', req.file.filename); // Path to the uploaded Excel file
+  const workbook = xlsx.readFile(filePath);
+  const sheetName = workbook.SheetNames[0];
+  const worksheet = xlsx.utils.sheet_to_json(workbook.Sheets[sheetName]);
+
+  // Assuming your Excel data has a 'key' and 'value' column
+  const excelData = worksheet.map(row => ({
+    key: row.key,
+    value: row.value,
+  }));
+
+  // Fetch data from MongoDB
+  Data.find({}, (err, mongoData) => {
+    if (err) return res.status(500).send(err);
+
+    // Match data
+    const matchedData = excelData.map(excelRow => {
+      const mongoRow = mongoData.find(mongoRow => mongoRow.key === excelRow.key);
+      return {
+        key: excelRow.key,
+        excelValue: excelRow.value,
+        mongoValue: mongoRow ? mongoRow.value : null,
+      };
+    });
+
+    res.json(matchedData);
+  });
+});
+
+const PORT = process.env.PORT || 3000;
+app.listen(PORT, () => {
+  console.log(`Server is running on port ${PORT}`);
+});
+
+
+
+
+const express = require('express');
+const router = express.Router();
+const multer = require('multer');
+const xlsx = require('xlsx');
+const mongoose = require('mongoose');
+const createCsvWriter = require('csv-writer').createObjectCsvWriter;
+
+// Configure multer for file uploads
+const upload = multer({ dest: 'uploads/' });
+
+// Define your MongoDB model
+const YourModel = mongoose.model('YourModel', new mongoose.Schema({
+    // Define your schema
+}));
+
+// Route to handle file upload and matching
+router.post('/match', upload.single('file'), async (req, res) => {
+    try {
+        const filePath = req.file.path;
+
+        // Read the Excel file
+        const workbook = xlsx.readFile(filePath);
+        const sheetName = workbook.SheetNames[0];
+        const sheet = workbook.Sheets[sheetName];
+        const excelData = xlsx.utils.sheet_to_json(sheet);
+
+        // Fetch data from MongoDB
+        const mongoData = await YourModel.find({});
+
+        // Match the data
+        const matches = [];
+        excelData.forEach(excelRow => {
+            const match = mongoData.find(mongoRow => mongoRow.someField === excelRow.someField);
+            if (match) {
+                matches.push({ ...excelRow, matched: true });
+            } else {
+                matches.push({ ...excelRow, matched: false });
+            }
+        });
+
+        // Write results to a CSV file
+        const csvWriter = createCsvWriter({
+            path: 'uploads/matches.csv',
+            header: Object.keys(matches[0]).map(key => ({ id: key, title: key }))
+        });
+
+        await csvWriter.writeRecords(matches);
+
+        res.download('uploads/matches.csv');
+    } catch (err) {
+        res.status(500).send(err.message);
+    }
+});
+
+module.exports = router;
+
+
+
+
+
+const matchdata = async (req, res) => {
+    try {
+        console.log("Hii");
+
+        if (!req.file || !req.file.filename) {
+            return res.status(400).send("File not uploaded");
+        }
+
+        const filePath = req.file.path;
+        console.log("FilePath", filePath);
+
+        const XlsxData = xlsx.readFile(filePath);
+        console.log("XLData", XlsxData);
+
+        const sheetName = XlsxData.SheetNames[0];
+        console.log("SN", sheetName);
+
+        const Sheet = xlsx.utils.sheet_to_json(XlsxData.Sheets[sheetName]);
+        console.log("Sheet", Sheet);
+
+        // Extract all values from the Sheet
+        const excelValues = Sheet.flatMap(row => Object.values(row));
+        console.log("Excel Values", excelValues);
+
+        const Data = await User.find({});
+        console.log("MongoDB Data", Data);
+
+        // Extract all values from the MongoDB Data
+        const mongoValues = Data.flatMap(row => Object.values(row));
+        console.log("MongoDB Values", mongoValues);
+
+        // Match the values
+        const matchData = excelValues.map(value => ({
+            value,
+            matched: mongoValues.includes(value)
+        }));
+
+        console.log("Matched Data", matchData);
+
+        // Write the matched data to a CSV file if needed
+        const csvWriter = createCsvWriter({
+            path: 'uploads/matches.csv',
+            header: [
+                { id: 'value', title: 'Value' },
+                { id: 'matched', title: 'Matched' }
+            ]
+        });
+
+        await csvWriter.writeRecords(matchData);
+        
+        // Return the matched data or the CSV file as response
+        res.download('uploads/matches.csv');
+    } catch (err) {
+        console.error("Error:", err);
+        return res.status(500).send(err.message);
+    }
+};
+
+
+
+
+
+
+const express = require('express');
+const mongoose = require('mongoose');
+const multer = require('multer');
+const xlsx = require('xlsx');
+const createCsvWriter = require('csv-writer').createObjectCsvWriter;
+
+// Configure multer for file uploads
+const upload = multer({ dest: 'uploads/' });
+
+// Define your MongoDB model
+const User = mongoose.model('User', new mongoose.Schema({
+    name: String,
+    email: String,
+    // Add other fields as required
+}));
+
+// Function to handle matching
+const matchdata = async (req, res) => {
+    try {
+        console.log("Hii");
+
+        if (!req.file || !req.file.filename) {
+            return res.status(400).send("File not uploaded");
+        }
+
+        const filePath = req.file.path;
+        console.log("FilePath", filePath);
+
+        const XlsxData = xlsx.readFile(filePath);
+        console.log("XLData", XlsxData);
+
+        const sheetName = XlsxData.SheetNames[0];
+        console.log("SN", sheetName);
+
+        const Sheet = xlsx.utils.sheet_to_json(XlsxData.Sheets[sheetName]);
+        console.log("Sheet", Sheet);
+
+        // Extract all values from the Sheet
+        const excelValues = Sheet.flatMap(row => Object.values(row));
+        console.log("Excel Values", excelValues);
+
+        const Data = await User.find({});
+        console.log("MongoDB Data", Data);
+
+        // Extract only name and email values from MongoDB data
+        const mongoValues = Data.flatMap(row => [row.name, row.email]);
+        console.log("MongoDB Values", mongoValues);
+
+        // Match the values
+        const matchData = excelValues.map(value => ({
+            value,
+            matched: mongoValues.includes(value)
+        }));
+
+        console.log("Matched Data", matchData);
+
+        // Write the matched data to a CSV file if needed
+        const csvWriter = createCsvWriter({
+            path: 'uploads/matches.csv',
+            header: [
+                { id: 'value', title: 'Value' },
+                { id: 'matched', title: 'Matched' }
+            ]
+        });
+
+        await csvWriter.writeRecords(matchData);
+        
+        // Return the matched data or the CSV file as response
+        res.download('uploads/matches.csv');
+    } catch (err) {
+        console.error("Error:", err);
+        return res.status(500).send(err.message);
+    }
+};
+
+const app = express();
+app.post('/api/match', upload.single('file'), matchdata);
+
+const PORT = 3000;
+mongoose.connect('mongodb://localhost:27017/your-db-name', { useNewUrlParser: true, useUnifiedTopology: true })
+    .then(() => {
+        console.log('MongoDB connected');
+        app.listen(PORT, () => {
+            console.log(`Server is running on port ${PORT}`);
+        });
+    })
+    .catch(err => console.log(err));
+
+// if (!req.file || !req.file.filename) {
+        //     return res.status(400).send("File not uploaded");
+        //   }
