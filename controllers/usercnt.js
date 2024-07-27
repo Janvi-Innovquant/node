@@ -17,7 +17,9 @@ module.exports = {
 
     matchdata: async (req, res) => {
         console.log("Hii")
-
+        if (!req.file || !req.file.filename) {
+                return res.status(400).send("File not uploaded");
+              }
         const filePath = req.file.path;
         console.log("FilePath", filePath)
         const XlsxData = xlsx.readFile(filePath)

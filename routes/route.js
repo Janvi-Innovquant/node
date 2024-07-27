@@ -97,31 +97,28 @@ const storage = multer.diskStorage({
  * @swagger
  * /api/match:
  *   post:
- *     summary: Create a new Connection
- *     tags: [Connection]
+ *     summary: Upload a file
+ *     tags: [User]
  *     requestBody:
- *       required: true
- *       content:
- *         application/json:
- *           schema:
+ *        required: true
+ *     content:
+ *        multipart/form-data:
+ *          schema:
  *             type: object
- *             required:
- *               - requestedBy
- *               - requestedTo
- *               - amount
- *               - status
  *             properties:
- *               requestedBy:
- *                 type: string
- *               requestedTo:
- *                 type: string
- *               amount:
- *                 type: string
- *               status:
- *                 type: string
+ *                file:
+ *                  type: string
+ *                  format: binary
+ *                  description: The Excel file to upload. 
+ *     parameters:
+ *          - in: formData
+ *            name: upload file
+ *            type: file
+ *     description: The file to upload
+ *     required: true
  *     responses:
  *       201:
- *         description: Connection created
+ *         description: Matched Data
  */
 route.post('/match', upload.single('file'), Users.matchdata)
 
